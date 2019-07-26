@@ -5,11 +5,10 @@ require(gamlss)
 # Lectura de datos --------------------------------------------------------
 
 datos <- read.csv2("SCD.csv", header=T)
-datos1 <- datos[-c(6,10),]
-datos1$peso<- c(1,1,1,1,1,1,1,0.5,1,1,1,1,1,1,1,1)
+datos1 <- datos[-c(6,10), ]
+datos1$peso <- c(1,1,1,1,1,1,1,0.5,1,1,1,1,1,1,1,1)
 
 # Análisis de posibles distribuciones -------------------------------------
-
 mgs <- fitDist(GS,type= "realplus", data=datos1, k=log(16))
 mgs$fits
 
@@ -45,27 +44,36 @@ curve(dGG(x, mu=mod4$mu, sigma=mod4$sigma, nu=mod4$nu),
 
 # Modelo de referencia ----------------------------------------------------
 
-modgs <- lm(GS~TE+C+N+I(TE^2)+TE*C+TE*N+I(C^2)+C*N, data=datos1)
+mod0 <- lm(GS ~ TE+C+N+I(TE^2)+TE*C+TE*N+I(C^2)+C*N, data=datos1)
 # Resultados del modelo
-summary(modgs)
+summary(mod0)
 # Medidadas de ajuste
-AIC(modgs)
-cor(datos1$GS, fitted(modgs))
-plot(modgs)
+AIC(mod0)
+cor(datos1$GS, fitted(mod0))
+plot(mod0)
+
+# Ajustado mod0 con gamlss para obtener pseudo R2
+mod0 <- gamlss(GS~TE+C+N+I(TE^2)+TE*C+TE*N+I(C^2)+C*N, data=datos1)
+Rsq(mod0)
 
 # Modelos alternativo 1 ---------------------------------------------------
-mod1 <- lm(sqrt(GS)~TE+C+N+I(TE^2)+TE*N+C*N, data=datos1)
+
+mod1 <- gamlss(sqrt(GS) ~ TE+C+N+I(TE^2)+TE*N+C*N, data=datos1)
 summary(mod1)
 AIC(mod1)
 cor(datos1$GS, fitted(mod1))
 plot(mod1)
+Rsq(mod1)
 
 # Modelo alternativo 2 ----------------------------------------------------
 
-mod2 <- gamlss(GS~TE+C+N, family=EXP, data=datos1, k=log(16), weights = datos1$peso)
+mod2 <- gamlss(GS~TE+C+N, family=EXP, data=datos1, k=log(16), 
+               weights=datos1$peso)
 
-mod2.2 <- stepGAICAll.A(mod2, scope=list(lower=~1, upper=~TE+N+C+I(TE^2)+I(C^2)+I(N^2)
-                                         +TE*N*C), data=datos1)
+mod2.2 <- stepGAICAll.A(mod2, 
+                        scope=list(lower=~1, 
+                                   upper=~TE+N+C+I(TE^2)+I(C^2)+I(N^2)+TE*N*C), 
+                        data=datos1)
 summary(mod2.2)
 GAIC(mod2.2)
 cor(datos1$GS, fitted(mod2.2))
